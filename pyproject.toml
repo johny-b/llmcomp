@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llmcomp"
-version = "1.1.0"
+version = "1.2.0"
 description = "Research library for black-box experiments on language models."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -37,7 +37,17 @@ Homepage = "https://github.com/johny-b/llmcomp"
 Repository = "https://github.com/johny-b/llmcomp"
 
 [tool.hatch.build.targets.wheel]
-packages = ["llmcomp"] 
+packages = ["llmcomp"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "llmcomp_cache/",
+    "llmcomp_models/",
+    "dist/",
+    "__pycache__/",
+    "*.pyc",
+    ".git/",
+]
 
 [tool.ruff]
 line-length = 120
