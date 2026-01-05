@@ -21,9 +21,11 @@ del os.environ["OPENAI_API_KEY_0"]
 
 # %%
 # ============================================================================
-# LOAD MODELS
+# DEFINE MODELS
 # ============================================================================
 # Load finetuned models from birds_replication/models/data
+# This loads models created via llmcomp.finetuning.
+# If you want to use any different models - **just change the MODELS dictionary below**.
 manager = FinetuningManager()
 data_dir = "birds_replication/models/data"
 base_model = "gpt-4.1-2025-04-14"
