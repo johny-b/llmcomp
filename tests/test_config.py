@@ -148,3 +148,4 @@ class TestClientForModel:
         # OPENAI_API_KEY < OPENROUTER_API_KEY lexicographically
         assert client.api_key == "oai-key"
 
+

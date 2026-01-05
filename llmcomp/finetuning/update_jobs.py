@@ -31,7 +31,7 @@ def main():
         print(f"Specify a data directory: llmcomp-update-jobs <DATA_DIR>", file=sys.stderr)
         sys.exit(1)
 
-    FinetuningManager().update_jobs(data_dir=data_dir)
+    FinetuningManager(data_dir=data_dir).update_jobs()
 
 
 if __name__ == "__main__":
