@@ -66,7 +66,7 @@ Contents:
 The manager uses `organization_id` from OpenAI to track which org owns each job. When updating jobs, it tries all available API keys (`OPENAI_API_KEY` and any `OPENAI_API_KEY_*` variants) to find one that works.
 
 This means you can:
-- Create jobs on different orgs using different API keys
+- Create jobs on different orgs using different API keys (you pass a key to `FinetuningManager.create_job()`)
 - Share `jobs.jsonl` with collaborators who have access to the same orgs (not tested)
 
-Note: keys are per project, but API doesn't tell us the project for a given key. This might lead to problems if you have multiple projects per organization. One such problem is here
+Note: keys are per project, but API doesn't tell us the project for a given key. So `llmcomp` knows only organizations. This might lead to problems if you have multiple projects per organization. One such problem is described [here](https://github.com/johny-b/llmcomp/issues/31).
