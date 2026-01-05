@@ -69,6 +69,7 @@ Suppose you request data for a model named "foo". llmcomp will:
 2. Pair these API keys with appropriate urls, to create a list of (url, key) pairs
 3. Send a single-token request for your "foo" model using **all** these pairs
 4. If any pair works, llmcomp will use it for processing your data
+5. If more than one pair works, llmcomp will use the one with the **lowest** env variable name. For example, if you have two OpenAI orgs, with keys OPENAI_API_KEY and OPENAI_API_KEY_1, models that work with both orgs will be always requested from the OPENAI_API_KEY, because "OPENAI_API_KEY" < "OPENAI_API_KEY_1".
 
 You can interfere with this process:
 
@@ -87,11 +88,7 @@ print(client.base_url, client.api_key[:16] + "...")
 Config.url_key_pairs = [("http://localhost:8000/v1", "fake-key")]
 ```
 
-Unwanted consequences:
-* llmcomp sends some nonsensical requests. E.g. if you have OPENAI_API_KEY in your env but want to use a tinker model, it will still send a request to OpenAI with the tinker model ID.
-* If more than one key works for a given model name (e.g. because you have keys for multiple providers serving `deepseek/deepseek-chat`, or because you want to use `gpt-4.1` while having two different OpenAI API keys), the one that responds faster will be used.
-
-Both of these could be easily fixed.
+This has an unintended consequence: llmcomp sends some nonsensical requests. E.g. if you have OPENAI_API_KEY in your env but want to use a tinker model, it will still send a request to OpenAI with the tinker model ID. This is easy to improve, but also doesn't seem important.
 
 ## API reference
 
