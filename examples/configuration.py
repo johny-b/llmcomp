@@ -16,7 +16,8 @@ print(f"  max_workers: {Config.max_workers}")
 print(f"  cache_dir: {Config.cache_dir}")
 print(f"  yaml_dir: {Config.yaml_dir}")
 print(f"  verbose: {Config.verbose}")
-print("  url_key_pairs:", [(k, v[:16] + "...") for k, v in Config.url_key_pairs])
+print(f"  reasoning_effort: {Config.reasoning_effort}")
+print("  url_key_pairs:", [(url, key[:16] + "...", env) for url, key, env in Config.url_key_pairs])
 print()
 
 # ============================================================================
@@ -38,12 +39,18 @@ Config.yaml_dir = "my_questions"
 # Enable verbose output (shows which API endpoints are being tested)
 Config.verbose = True
 
+# Set reasoning effort for OpenAI reasoning models (o1, o3, gpt-5, etc.)
+# Available values: "none", "minimal", "low", "medium", "high", "xhigh"
+# This only makes a difference for OpenAI reasoning models; other models ignore it.
+Config.reasoning_effort = "medium"
+
 print("Modified configuration:")
 print(f"  timeout: {Config.timeout}")
 print(f"  max_workers: {Config.max_workers}")
 print(f"  cache_dir: {Config.cache_dir}")
 print(f"  yaml_dir: {Config.yaml_dir}")
 print(f"  verbose: {Config.verbose}")
+print(f"  reasoning_effort: {Config.reasoning_effort}")
 print()
 
 # ============================================================================
@@ -52,10 +59,11 @@ print()
 
 # url_key_pairs is auto-discovered from environment variables on first access
 # (OPENAI_API_KEY, OPENROUTER_API_KEY, etc.)
-print("URL-key pairs:", [(k, v[:16] + "...") for k, v in Config.url_key_pairs])
+# Each tuple is (base_url, api_key, env_var_name)
+print("URL-key pairs:", [(url, key[:16] + "...", env) for url, key, env in Config.url_key_pairs])
 
 # You can modify the list - add custom endpoints:
-Config.url_key_pairs.append(("https://my-custom-endpoint.com/v1", "sk-my-custom-key"))
+Config.url_key_pairs.append(("https://my-custom-endpoint.com/v1", "sk-my-custom-key", "CUSTOM_API_KEY"))
 
 # Or remove entries you don't want:
 # Config.url_key_pairs = [p for p in Config.url_key_pairs if "openrouter" not in p[0]]
