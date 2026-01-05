@@ -185,6 +185,7 @@ class FinetuningManager:
         batch_size: int | str = "auto",
         lr_multiplier: float | str = "auto",
         seed: int | None = None,
+        validation_file_name: str | None = None,
     ):
         """Create a new finetuning job.
 
@@ -202,6 +203,7 @@ class FinetuningManager:
                 batch_size="auto",
                 lr_multiplier="auto",
                 seed=None,
+                validation_file_name="my_validation.jsonl",  # Optional validation dataset
             )
 
         """
@@ -215,6 +217,11 @@ class FinetuningManager:
         organization_id = self._get_organization_id(api_key)
 
         file_id = self._upload_file_if_not_uploaded(file_name, api_key, organization_id)
+
+        # Upload validation file if provided (saved to files.jsonl, but not jobs.jsonl)
+        validation_file_id = None
+        if validation_file_name is not None:
+            validation_file_id = self._upload_file_if_not_uploaded(validation_file_name, api_key, organization_id)
 
         data = {
             "model": base_model,
@@ -232,6 +239,8 @@ class FinetuningManager:
                 },
             },
         }
+        if validation_file_id is not None:
+            data["validation_file"] = validation_file_id
 
         client = openai.OpenAI(api_key=api_key)
         response = client.fine_tuning.jobs.create(**data)
@@ -263,6 +272,8 @@ class FinetuningManager:
         print(f"  Base model: {base_model}")
         print(f"  Suffix:     {suffix}")
         print(f"  File:       {file_name} (id: {file_id})")
+        if validation_file_id is not None:
+            print(f"  Validation: {validation_file_name} (id: {validation_file_id})")
         print(f"  Epochs:     {epochs}, Batch: {batch_size}, LR: {lr_multiplier}")
         print(f"  Status:     {response.status}")
         print(f"\nRun `llmcomp-update-jobs` to check progress.")
