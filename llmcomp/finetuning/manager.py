@@ -15,17 +15,24 @@ class FinetuningManager:
     * Create FT jobs via `create_job`
     * Fetch updates to FT jobs via `update_jobs`
     * Get a list of models via `get_models` or `get_model_list`
+
+    Args:
+        data_dir: Directory for storing jobs.jsonl, files.jsonl, and models.csv.
+                  Defaults to "llmcomp_models".
     """
 
     # Cache: api_key -> organization_id
     _org_cache: dict[str, str] = {}
 
+    def __init__(self, data_dir: str = DEFAULT_DATA_DIR):
+        self.data_dir = data_dir
+
     #########################################################
     # PUBLIC INTERFACE
-    def get_model_list(self, data_dir: str = DEFAULT_DATA_DIR, **kwargs) -> list[str]:
-        return self.get_models(data_dir, **kwargs)["model"].tolist()
+    def get_model_list(self, **kwargs) -> list[str]:
+        return self.get_models(**kwargs)["model"].tolist()
 
-    def get_models(self, data_dir: str = DEFAULT_DATA_DIR, **kwargs) -> pd.DataFrame:
+    def get_models(self, **kwargs) -> pd.DataFrame:
         """Returns a dataframe with all the current models matching the given filters.
 
         Or just all models if there are no filters.
@@ -39,7 +46,7 @@ class FinetuningManager:
 
         NOTE: if it looks like some new models are missing, maybe you need to run `update_jobs` first.
         """
-        all_models = self._get_all_models(data_dir)
+        all_models = self._get_all_models()
 
         mask = pd.Series(True, index=all_models.index)
         for col, val in kwargs.items():
@@ -48,7 +55,7 @@ class FinetuningManager:
         filtered_df = all_models[mask].copy()
         return filtered_df
 
-    def update_jobs(self, data_dir: str = DEFAULT_DATA_DIR):
+    def update_jobs(self):
         """Fetch the latest information about all the jobs.
 
         It's fine to run this many times - the data is not overwritten.
@@ -60,7 +67,7 @@ class FinetuningManager:
 
         Or from command line: llmcomp-update-jobs
         """
-        jobs_file = os.path.join(data_dir, "jobs.jsonl")
+        jobs_file = os.path.join(self.data_dir, "jobs.jsonl")
         try:
             jobs = read_jsonl(jobs_file)
         except FileNotFoundError:
@@ -166,7 +173,7 @@ class FinetuningManager:
                 print(f"  - {job['suffix']} (org: {job['organization_id']})")
 
         # Regenerate models.csv with any newly completed jobs
-        self._get_all_models(data_dir)
+        self._get_all_models()
 
     def create_job(
         self,
@@ -178,7 +185,6 @@ class FinetuningManager:
         batch_size: int | str = "auto",
         lr_multiplier: float | str = "auto",
         seed: int | None = None,
-        data_dir: str = DEFAULT_DATA_DIR,
     ):
         """Create a new finetuning job.
 
@@ -203,12 +209,12 @@ class FinetuningManager:
             suffix = self._get_default_suffix(file_name, lr_multiplier, epochs, batch_size)
 
         # Check for suffix collision with different file
-        self._check_suffix_collision(suffix, file_name, data_dir)
+        self._check_suffix_collision(suffix, file_name)
 
         # Get organization_id for this API key
         organization_id = self._get_organization_id(api_key)
 
-        file_id = self._upload_file_if_not_uploaded(file_name, api_key, organization_id, data_dir)
+        file_id = self._upload_file_if_not_uploaded(file_name, api_key, organization_id)
 
         data = {
             "model": base_model,
@@ -230,7 +236,7 @@ class FinetuningManager:
         client = openai.OpenAI(api_key=api_key)
         response = client.fine_tuning.jobs.create(**data)
         job_id = response.id
-        fname = os.path.join(data_dir, "jobs.jsonl")
+        fname = os.path.join(self.data_dir, "jobs.jsonl")
         try:
             ft_jobs = read_jsonl(fname)
         except FileNotFoundError:
@@ -263,14 +269,14 @@ class FinetuningManager:
 
     #########################################################
     # PRIVATE METHODS
-    def _check_suffix_collision(self, suffix: str, file_name: str, data_dir: str):
+    def _check_suffix_collision(self, suffix: str, file_name: str):
         """Raise error if suffix is already used with a different file.
 
         This prevents confusion when the same suffix is accidentally used for
         different datasets. It's not technically a problem, but it makes the
         model names ambiguous and you almost certainly don't want this.
         """
-        jobs_file = os.path.join(data_dir, "jobs.jsonl")
+        jobs_file = os.path.join(self.data_dir, "jobs.jsonl")
         try:
             jobs = read_jsonl(jobs_file)
         except FileNotFoundError:
@@ -301,8 +307,8 @@ class FinetuningManager:
                     f"use a different suffix to distinguish the new models."
                 )
 
-    def _get_all_models(self, data_dir: str = DEFAULT_DATA_DIR) -> pd.DataFrame:
-        jobs_fname = os.path.join(data_dir, "jobs.jsonl")
+    def _get_all_models(self) -> pd.DataFrame:
+        jobs_fname = os.path.join(self.data_dir, "jobs.jsonl")
         try:
             jobs = read_jsonl(jobs_fname)
         except FileNotFoundError:
@@ -335,11 +341,11 @@ class FinetuningManager:
                     models.append(checkpoint_data)
 
         df = pd.DataFrame(models)
-        df.to_csv(os.path.join(data_dir, "models.csv"), index=False)
+        df.to_csv(os.path.join(self.data_dir, "models.csv"), index=False)
         return df
 
-    def _upload_file_if_not_uploaded(self, file_name, api_key, organization_id, data_dir):
-        files_fname = os.path.join(data_dir, "files.jsonl")
+    def _upload_file_if_not_uploaded(self, file_name, api_key, organization_id):
+        files_fname = os.path.join(self.data_dir, "files.jsonl")
         try:
             files = read_jsonl(files_fname)
         except FileNotFoundError:
@@ -350,14 +356,14 @@ class FinetuningManager:
             if file["name"] == file_name and file["md5"] == md5 and file["organization_id"] == organization_id:
                 print(f"File {file_name} already uploaded. ID: {file['id']}")
                 return file["id"]
-        return self._upload_file(file_name, api_key, organization_id, data_dir)
+        return self._upload_file(file_name, api_key, organization_id)
 
-    def _upload_file(self, file_name, api_key, organization_id, data_dir):
+    def _upload_file(self, file_name, api_key, organization_id):
         try:
             file_id = self._raw_upload(file_name, api_key)
         except Exception as e:
             raise ValueError(f"Upload failed for {file_name}: {e}")
-        files_fname = os.path.join(data_dir, "files.jsonl")
+        files_fname = os.path.join(self.data_dir, "files.jsonl")
         try:
             files = read_jsonl(files_fname)
         except FileNotFoundError:

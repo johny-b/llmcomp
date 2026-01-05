@@ -51,7 +51,12 @@ models = manager.get_model_list(suffix="my-experiment")
 
 ## Data storage
 
-All data is stored in `llmcomp_models/` (configurable via `data_dir` parameter):
+All data is stored in `llmcomp_models/` by default. Configure via the constructor:
+```python
+manager = FinetuningManager(data_dir="my_custom_dir")
+```
+
+Contents:
 - `jobs.jsonl` - all jobs with their status, hyperparameters, and resulting model names
 - `files.jsonl` - uploaded training files (to avoid re-uploading)
 - `models.csv` - convenient view of completed models
