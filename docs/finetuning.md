@@ -69,3 +69,4 @@ This means you can:
 - Create jobs on different orgs using different API keys
 - Share `jobs.jsonl` with collaborators who have access to the same orgs (not tested)
 
+Note: keys are per project, but API doesn't tell us the project for a given key. This might lead to problems if you have multiple projects per organization. One such problem is here

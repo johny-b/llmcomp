@@ -360,6 +360,8 @@ URL-key pairs for client creation.
 Auto-discovered from environment variables on first access.
 Users can modify this list (add/remove pairs).
 
+Returns list of (base_url, api_key, env_var_name) tuples.
+
 ### Methods
 
 #### `client_for_model(cls, model: str) -> openai.OpenAI`

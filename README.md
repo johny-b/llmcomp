@@ -40,7 +40,7 @@ print(df.head(1).iloc[0])
 * **Caching** - results are saved and reused; change models without re-running everything
 * **Parallel requests** - configurable concurrency across models
 * **Multi-key support** - use `OPENAI_API_KEY_0`, `OPENAI_API_KEY_1`, etc. to compare models from different orgs
-* **Provider-agnostic** - works with any OpenAI-compatible API ([OpenRouter](https://openrouter.ai/), [Tinker](https://tinker-docs.thinkingmachines.ai/), etc.)
+* **Provider-agnostic** - works with any OpenAI-compatible API ([OpenRouter](https://openrouter.ai/docs/quickstart#using-the-openai-sdk), [Tinker](https://tinker-docs.thinkingmachines.ai/compatible-apis/openai), etc.)
 * **Extensible** - highly configurable as long as your goal is comparing LLMs
 
 ## Cookbook
@@ -110,7 +110,7 @@ You can use `ModelAdapter.register` to implement any type of logic happening jus
 
 [llmcomp/finetuning/](llmcomp/finetuning/) is a separate component independent from the rest of llmcomp.
 
-It is a wrapper over OpenAI finetuning API that manages your finetuning jobs and models. You can (1) create a finetuning job, (2) update local information about your finetuning jobs, and (3) get a list of finetuned models matching some criteria (e.g. suffix or a base model.)
+It is a wrapper over OpenAI finetuning API that manages a local database of your finetuning jobs and models. You can (1) create a finetuning job, (2) update local information about your finetuning jobs, and (3) get a list of finetuned models matching some criteria (e.g. suffix or a base model.)
 This is very useful when you finetune many (tens? hundreds?) models. If you finetune only rarely, GUI is probably better.
 
 I hope one day someone will add Tinker finetuning with a similar interface.
