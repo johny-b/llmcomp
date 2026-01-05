@@ -8,6 +8,12 @@ def on_backoff(details):
     if not str(exception_details).startswith("Connection error."):
         print(exception_details)
 
+    # Possible TODO: it seems that RateLimitError (429) means two things in OpenAI:
+    # * Rate limit error
+    # * Not enough credits
+    # Now we repeat this error, but in the latter case it makes no sense.
+    # But we can do that only by reading the message, and this is bad.
+
 
 @backoff.on_exception(
     wait_gen=backoff.expo,

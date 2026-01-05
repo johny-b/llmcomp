@@ -149,3 +149,4 @@ class TestClientForModel:
         assert client.api_key == "oai-key"
 
 
+
