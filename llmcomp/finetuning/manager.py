@@ -363,10 +363,20 @@ class FinetuningManager:
             files = []
 
         md5 = self._get_file_md5(file_name)
+        client = openai.OpenAI(api_key=api_key)
+
         for file in files:
             if file["name"] == file_name and file["md5"] == md5 and file["organization_id"] == organization_id:
-                print(f"File {file_name} already uploaded. ID: {file['id']}")
-                return file["id"]
+                # Verify the file actually exists (it might be in a different project)
+                # See: https://github.com/johny-b/llmcomp/issues/31
+                try:
+                    client.files.retrieve(file["id"])
+                    print(f"File {file_name} already uploaded. ID: {file['id']}")
+                    return file["id"]
+                except openai.NotFoundError:
+                    # File is in this organization, but in another project
+                    pass
+
         return self._upload_file(file_name, api_key, organization_id)
 
     def _upload_file(self, file_name, api_key, organization_id):
