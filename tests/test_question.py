@@ -567,6 +567,100 @@ def test_judge_name_conflicts_with_generated_columns(mock_openai_chat_completion
         )
 
 
+def test_rating_aggregates_duplicate_integer_tokens(temp_dir):
+    """
+    Test that Rating question correctly aggregates probabilities when multiple
+    tokens map to the same integer value.
+    
+    This can happen with Unicode variants of digits:
+    - "100" (ASCII) and "１００" (full-width Japanese/Chinese) both parse to int 100
+    - Python's int() handles this: int("１００") == 100
+    
+    Before the bug fix, the code would overwrite probabilities:
+        probs[int_key] = val  # Only keeps the last token's probability
+    
+    After the fix, probabilities are accumulated:
+        probs[int_key] += val  # Sums all tokens mapping to same integer
+    """
+    from unittest.mock import patch, Mock
+    from tests.conftest import MockCompletion, MockLogprobs, MockContent, MockLogprob
+    import llmcomp.runner.runner as runner_module
+    import llmcomp.config as config_module
+    from llmcomp.config import Config
+    
+    Config.client_cache.clear()
+    
+    def mock_completion(*, client=None, **kwargs):
+        messages = kwargs.get('messages', [])
+        logprobs = kwargs.get('logprobs', False)
+        
+        if logprobs:
+            # Return logprobs where two different tokens map to the same integer:
+            # "50" (ASCII) and "５０" (full-width) both parse to 50
+            # Each has probability 0.3, so combined they should be 0.6
+            # "60" has probability 0.4
+            # Expected rating = (50 * 0.6 + 60 * 0.4) / 1.0 = 54.0
+            top_logprobs = [
+                MockLogprob("50", -1.2),    # ~0.30 probability
+                MockLogprob("５０", -1.2),  # ~0.30 probability (full-width digits, same int value)
+                MockLogprob("60", -0.92),   # ~0.40 probability
+            ]
+            return MockCompletion("", logprobs=MockLogprobs([MockContent(top_logprobs)]))
+        
+        return MockCompletion("Mocked response")
+    
+    mock_client = Mock()
+    mock_client.chat.completions.create = Mock(side_effect=mock_completion)
+    
+    def mock_client_for_model(model):
+        if model not in Config.client_cache:
+            Config.client_cache[model] = mock_client
+        return Config.client_cache[model]
+    
+    with patch.object(Config, 'client_for_model', side_effect=mock_client_for_model), \
+         patch('llmcomp.runner.chat_completion.openai_chat_completion', side_effect=mock_completion), \
+         patch.object(runner_module, 'openai_chat_completion', side_effect=mock_completion), \
+         patch.object(config_module, 'openai_chat_completion', side_effect=mock_completion):
+        
+        question = Question.create(
+            type="rating",
+            name="test_duplicate_integer_tokens",
+            paraphrases=["Rate this from 0 to 100"],
+            min_rating=0,
+            max_rating=100,
+        )
+        
+        model_groups = {"group1": ["model-1"]}
+        df = question.df(model_groups)
+    
+    Config.client_cache.clear()
+    
+    # Check we have exactly one row
+    assert len(df) == 1
+    
+    answer = df["answer"].iloc[0]
+    assert answer is not None, "Rating should not be None (not a refusal)"
+    
+    # Math:
+    # exp(-1.2) ≈ 0.301 for "50" and "５０", exp(-0.92) ≈ 0.399 for "60"
+    # total = 0.301 + 0.301 + 0.399 = 1.001
+    #
+    # Correct(correct - aggregates):
+    #   probs[50] = 0.602, probs[60] = 0.399
+    #   normalized: 50 → 0.601, 60 → 0.399
+    #   expected = 50*0.601 + 60*0.399 ≈ 54
+    #
+    # With weird tokens overwriting the correct one (bug - overwrites):
+    #   probs[50] = 0.301 (second overwrites first), probs[60] = 0.399
+    #   but total still = 1.001, so normalized probs don't sum to 1!
+    #   expected = 50*0.301 + 60*0.399 ≈ 39
+    
+    assert 53 < answer < 55, (
+        f"Expected rating ≈ 54 (with correct aggregation), got {answer}. "
+        f"Bug: duplicate integer tokens were not aggregated - prob mass was lost."
+    )
+
+
 def test_judge_with_answer_only_template_and_duplicate_answers(temp_dir):
     """
     Test for bug: when judge template only uses {answer} (not {question}),
