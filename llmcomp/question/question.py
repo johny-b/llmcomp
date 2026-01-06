@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import warnings
 from abc import ABC, abstractmethod
+from collections import defaultdict 
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from queue import Queue
@@ -761,8 +762,9 @@ class Rating(Question):
         """
         if score is None:
             return None
-
-        probs = {}
+        
+        # Note: you might have multiple tokens mapping to the same integer key, e.g. "100" and "１００"
+        probs = defaultdict(float)
         total = 0
         for key, val in score.items():
             try:
@@ -770,9 +772,9 @@ class Rating(Question):
             except ValueError:
                 continue
             if self.min_rating <= int_key <= self.max_rating:
-                probs[int_key] = val
+                probs[int_key] += val
                 total += val
-
+        
         if total == 0 or (1 - total) >= self.refusal_threshold:
             return None
 
