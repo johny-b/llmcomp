@@ -10,6 +10,13 @@ from llmcomp.config import Config, NoClientForModel
 from llmcomp.runner.chat_completion import openai_chat_completion
 from llmcomp.runner.model_adapter import ModelAdapter
 
+
+class DuplicateTokenError(Exception):
+    """Raised when API returns duplicate tokens in logprobs (unexpected provider behavior)."""
+
+    pass
+
+
 NO_LOGPROBS_WARNING = """\
 Failed to get logprobs because {model} didn't send them.
 Returning empty dict, I hope you can handle it.
@@ -121,6 +128,15 @@ class Runner:
             print(NO_LOGPROBS_WARNING.format(model=self.model, completion=completion))
             return {}
 
+        # Check for duplicate tokens - this shouldn't happen with OpenAI but might with other providers
+        tokens = [el.token for el in logprobs]
+        if len(tokens) != len(set(tokens)):
+            duplicates = [t for t in tokens if tokens.count(t) > 1]
+            raise DuplicateTokenError(
+                f"API returned duplicate tokens in logprobs: {set(duplicates)}. "
+                f"Model: {self.model}. This is unexpected - please report this issue."
+            )
+
         result = {}
         for el in logprobs:
             result[el.token] = math.exp(el.logprob) if convert_to_probs else el.logprob
@@ -186,7 +202,7 @@ class Runner:
             func_kwargs = {key: val for key, val in kwargs.items() if not key.startswith("_")}
             try:
                 result = func(**func_kwargs)
-            except NoClientForModel:
+            except (NoClientForModel, DuplicateTokenError):
                 raise
             except Exception as e:
                 # Truncate messages for readability
