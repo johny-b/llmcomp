@@ -130,7 +130,7 @@ Suppose you have many prompts you want to send to models. There are three option
 3. Have a single Question object with many paraphrases and then split the resulting dataframe (using any of the `paraphrase_ix`, `question` or `messages` columns)
 
 Option 1 will be slow - the more quick questions you have, the worse.
-Option 2 will be fast, but you need to write parallelization yourself. Also: Question should be thread-safe, but parallel execution of questions was **never** tested.
+Option 2 will be fast, but you need to write parallelization yourself. Question should be thread-safe, but parallel execution of questions was **never** tested. One thing that won't work: `llmcomp.Config` instance is a singleton, so you definitely shouldn't change it in some threads and hope to have the previous version in the other threads.
 Option 3 will also be fast and is recommended. Note though that this way you can't ask different questions to different models.
 
 Parallelization within a single question is done via threads. Perhaps async would be faster. Prompting claude-opus-4.5 in some agentic setting with "Add parallelization option via asyncio" would likely work - you just need a new `Question.many_models_execute`.
