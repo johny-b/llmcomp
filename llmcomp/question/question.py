@@ -8,7 +8,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from queue import Queue
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, overload
 
 import pandas as pd
 import yaml
@@ -25,6 +25,7 @@ from llmcomp.question.result import JudgeCache, Result
 from llmcomp.runner.runner import Runner
 
 if TYPE_CHECKING:
+    from llmcomp.question.judge import FreeFormJudge, RatingJudge
     from llmcomp.question.question import Question
 
 
@@ -64,6 +65,30 @@ class Question(ABC):
     def type(cls) -> str:
         """Type is snake_case version of the class name."""
         return "".join("_" + c.lower() if c.isupper() else c.lower() for c in cls.__name__).lstrip("_")
+
+    @overload
+    @classmethod
+    def create(cls, *, type: Literal["free_form"], **kwargs) -> "FreeForm": ...
+
+    @overload
+    @classmethod
+    def create(cls, *, type: Literal["rating"], **kwargs) -> "Rating": ...
+
+    @overload
+    @classmethod
+    def create(cls, *, type: Literal["next_token"], **kwargs) -> "NextToken": ...
+
+    @overload
+    @classmethod
+    def create(cls, *, type: Literal["free_form_judge"], **kwargs) -> "FreeFormJudge": ...
+
+    @overload
+    @classmethod
+    def create(cls, *, type: Literal["rating_judge"], **kwargs) -> "RatingJudge": ...
+
+    @overload
+    @classmethod
+    def create(cls, *, type: str, **kwargs) -> "Question": ...
 
     @classmethod
     def create(cls, **kwargs) -> "Question":
