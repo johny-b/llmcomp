@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict 
@@ -43,6 +44,13 @@ class Question(ABC):
         self.messages = messages
         self.logit_bias = logit_bias
         self.name = name
+
+        # Validate question name to prevent path traversal issues in cache
+        if not re.match(r'^[a-zA-Z0-9_-]+$', name):
+            raise ValueError(
+                f"Invalid question name: {name!r}. "
+                f"Name must contain only letters, numbers, underscores, and hyphens."
+            )
 
     @property
     @abstractmethod
