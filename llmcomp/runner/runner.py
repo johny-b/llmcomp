@@ -61,9 +61,21 @@ class Runner:
         prepared = self._prepare_for_model(params)
         completion = openai_chat_completion(client=self.client, **prepared)
         try:
-            return completion.choices[0].message.content
+            content = completion.choices[0].message.content
+            if content is None:
+                # So far all cases here were OpenAI refusals, e.g.
+                # ChatCompletion(
+                #     id='chatcmpl-...',
+                #     choices=[Choice(
+                #         finish_reason='stop', index=0, logprobs=None, message=ChatCompletionMessage(
+                #             content=None, 
+                #             refusal="I'm sorry, I'm unable to fulfill that request.",
+                #             ...))])
+                warnings.warn(f"API sent None as content. Returning empty string.\n{completion}", stacklevel=2)
+                return ""
+            return content
         except Exception:
-            print(completion)
+            warnings.warn(f"Unexpected error.\n{completion}")
             raise
 
     def single_token_probs(
