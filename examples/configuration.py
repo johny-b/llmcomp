@@ -69,7 +69,7 @@ Config.url_key_pairs.append(("https://my-custom-endpoint.com/v1", "sk-my-custom-
 # Config.url_key_pairs = [p for p in Config.url_key_pairs if "openrouter" not in p[0]]
 
 # Or replace entirely:
-# Config.url_key_pairs = [("https://api.openai.com/v1", "sk-...")]
+# Config.url_key_pairs = [("https://api.openai.com/v1", "sk-...", "SOME_API_KEY")]
 
 # Set to None to re-discover from environment on next access:
 Config.url_key_pairs = None

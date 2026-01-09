@@ -77,7 +77,7 @@ You can interfere with this process:
 ```
 from llmcomp import Config
 
-# See all pairs based on the env variables
+# See all pairs read from the env variables
 print(Config.url_key_pairs)
 
 # Get the OpenAI client instance for a given model.
@@ -86,10 +86,10 @@ print(client.base_url, client.api_key[:16] + "...")
 
 # Set the pairs to whatever you want.
 # You can add other OpenAI-compatible providers, or e.g. local inference.
-Config.url_key_pairs = [("http://localhost:8000/v1", "fake-key")]
+Config.url_key_pairs = [("http://localhost:8000/v1", "fake-key", "FAKE_API_KEY")]
 ```
 
-This has an unintended consequence: llmcomp sends some nonsensical requests. E.g. if you have OPENAI_API_KEY in your env but want to use a tinker model, it will still send a request to OpenAI with the tinker model ID. This is easy to improve, but also doesn't seem important.
+This provider discovery process has an unintended consequence: llmcomp sends some nonsensical requests. E.g. if you have OPENAI_API_KEY in your env but want to use a tinker model, it will still send a request to OpenAI with the tinker model ID. This is easy to improve, but also doesn't seem important.
 
 ## API reference
 
